@@ -92,3 +92,6 @@
 [submodule "msg"]
 	path = msg
 	url = https://github.com/WarriorHanamy/px4-msgs.git
+[submodule "dds_agent"]
+	path = dds_agent
+	url = https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
