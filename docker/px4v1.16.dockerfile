@@ -8,6 +8,39 @@ RUN apt install -y \
     python3-pip python3-venv \
     curl lsb-release gnupg wget
 
+RUN echo 'Acquire::http::Proxy "http://127.0.0.1:7890";' > /etc/apt/apt.conf.d/proxy.conf \
+    && echo 'Acquire::https::Proxy "http://127.0.0.1:7890";' >> /etc/apt/apt.conf.d/proxy.conf
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends install \
+    bc \
+    ;
+RUN echo "Gazebo (Harmonic) will be installed" && \
+    echo "Earlier versions will be removed" && \
+    # Add Gazebo binary repository
+    wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null && \
+    apt-get update -y --quiet
+
+ENV gazebo_packages="gz-harmonic libunwind-dev"
+
+
+RUN	DEBIAN_FRONTEND=noninteractive apt-get -y --quiet --no-install-recommends install \
+    dmidecode \
+    $gazebo_packages \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    libeigen3-dev \
+    libgstreamer-plugins-base1.0-dev \
+    libimage-exiftool-perl \
+    libopencv-dev \
+    libxml2-utils \
+    pkg-config \
+    protobuf-compiler \
+    ;
+
 RUN apt install -y locales \
     && locale-gen en_US.UTF-8 \
     &&  locale-gen zh_CN.UTF-8 \
@@ -21,32 +54,13 @@ RUN --mount=type=cache,target=/var/lib/apt/lists,id=apt_cache,sharing=locked \
     apt update && \
     apt install -y ros-humble-ros-base ros-dev-tools
 
-RUN set -ex && \
-    git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git /tmp/agent_src \
-    && cd /tmp/agent_src \
-    && git checkout 7362281
-COPY installations/install-dds-agent.sh /tmp/agent_src/install-dds-agent.sh
-RUN /tmp/agent_src/install-dds-agent.sh
+RUN git clone https://github.com/WarriorHanamy/px4v1.16.git --depth=1 --recursive
+WORKDIR /px4v1.16
 
-ARG CACHE_BUSTER=default
-RUN echo "Cache buster: $CACHE_BUSTER" && \
-    git clone https://github.com/WarriorHanamy/px4-vtol.git --depth=1 -b docker --recursive /px4-vtol
-WORKDIR /px4-vtol
-
-ENV PATH="/px4-vtol/Tools:$PATH"
+ENV PATH="/px4v1.16/Tools:$PATH"
 RUN make px4_sitl_default
-
-COPY ./src/aerodynamics /plugins/aerodynamics
-COPY ./src/utils /plugins/utils
-COPY ./src/external_libraries /plugins/external_libraries
-
-RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-ENV AERO_SIM_DATA_DIR=/plugins/aerodynamics/data
-
-
 #WORKDIR /plugins
 #RUN . /opt/ros/humble/setup.sh \
 #    && colcon build --symlink-install
 
 #WORKDIR /px4-vtol
-ENTRYPOINT ["runpx4", "1"]
