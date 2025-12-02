@@ -1,31 +1,12 @@
 #!/bin/bash
-set -e # 遇到错误立即退出
 
-# --- 函数：清理后台进程 ---
-cleanup() {
-    echo ""
-    echo "Stopping MicroXRCEAgent..."
-    kill $(jobs -p) 2>/dev/null || true
-    echo "Done."
-}
-
-# 设置 Trap: 当脚本退出或接收到中断信号(Ctrl+C)时，执行 cleanup 函数
-trap cleanup EXIT
-
-# --- 预检 ---
-if [ ! -f "Makefile" ]; then
-    echo "❌ Error: Makefile not found. Are you in the PX4 project root?"
-    exit 1
-fi
-
-# --- 参数解析逻辑 ---
-# 默认配置
-MODEL="gz_x500"
+# 默认设置：默认为 Headless 模式 (1)
 IS_HEADLESS=1
+MODEL="gz_x500"
 
-# 如果提供了参数 $1
+# 检查参数
 if [ -n "$1" ]; then
-    IS_HEADLESS=0 # 有参数则关闭 Headless
+    IS_HEADLESS=0 # 有参数则需要 GUI (关闭 Headless)
     case "$1" in
         2)
             MODEL="gz_quadtailsitter"
@@ -40,6 +21,10 @@ fi
 echo "🚀 Starting MicroXRCEAgent on port 8888..."
 MicroXRCEAgent udp4 -p 8888 & 
 
-echo "🚁 Starting PX4 SITL ($MODEL) | Headless: $IS_HEADLESS"
-
-HEADLESS=$IS_HEADLESS make px4_sitl $MODEL
+if [ "$IS_HEADLESS" -eq 1 ]; then
+    echo "🚁 Starting PX4 SITL ($MODEL) -- Mode: Headless"
+    HEADLESS=1 make px4_sitl $MODEL
+else
+    echo "🚁 Starting PX4 SITL ($MODEL) -- Mode: GUI"
+    make px4_sitl $MODEL
+fi
