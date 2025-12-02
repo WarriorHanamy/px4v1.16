@@ -54,7 +54,8 @@ RUN --mount=type=cache,target=/var/lib/apt/lists,id=apt_cache,sharing=locked \
     apt update && \
     apt install -y ros-humble-ros-base ros-dev-tools
 
-RUN git clone https://github.com/WarriorHanamy/px4v1.16.git --depth=1 --recursive
+RUN echo "Cached" && \
+    git clone https://github.com/WarriorHanamy/px4v1.16.git --depth=1 --recursive
 WORKDIR /px4v1.16
 
 ENV PATH="/px4v1.16/Tools:$PATH"
