@@ -59,6 +59,10 @@ WORKDIR /px4v1.16
 
 ENV PATH="/px4v1.16/Tools:$PATH"
 RUN make px4_sitl_default
+
+SHELL ["/bin/bash", "-c"]
+RUN bash install-dds-agent.sh
+
 #WORKDIR /plugins
 #RUN . /opt/ros/humble/setup.sh \
 #    && colcon build --symlink-install
